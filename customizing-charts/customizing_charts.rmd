@@ -1,11 +1,11 @@
 ---
-author: Cyrus Wakibia
-title: Customizing Charts Using ggplot2 extensions
-date: '2023-09-24'
+title: "Customizing Charts Using ggplot2 extensions"
+author: "Cyrus Wakibia"
+date: "2023-09-24"
 output:
   html_document:
     code_folding: hide
-
+  pdf_document: default
 ---
 
 
@@ -25,13 +25,11 @@ knitr::opts_chunk$set(warning = FALSE, message = FALSE, echo = FALSE)
 
 ### Some important themes
 
-```         
-`theme_minimal()`
-`ggthemes`
-`bbplots`
-`ggthemr`
-`The Economist`
-```
+- `theme_minimal()`
+- `ggthemes`
+- `bbplots`
+- `ggthemr`
+- `The Economist`
 
 ## ggthemes: Improve your themes with this
 
@@ -46,8 +44,8 @@ Provides simple Markdown and HTML rendering for ggplot2
 ### Key Functions
 
 ```         
-- `element_markdown()`
-- `element_textbox()`
+- element_markdown()
+- element_textbox()
 ```
 
 **`element_markdown()`**
@@ -257,11 +255,11 @@ mpg %>%
 
 ### ggplot2 recap
 
-    `geom_path()` connects the observations in the order in which they appear in the data. 
-    `geom_line()` connects them in order of the variable on the x axis. 
-    `geom_step()` creates a stairstep plot, highlighting exactly when changes occur. The group aesthetic determines which cases are connected together.
+- `geom_path()` connects the observations in the order in which they appear in the data. 
+- `geom_line()` connects them in order of the variable on the x axis. 
+- `geom_step()` creates a stairstep plot, highlighting exactly when changes occur. The group aesthetic determines which cases are connected together.
 
-**`geom_line`**
+#### `geom_line`
 
 ```{r}
 recent <- economics[economics$date > as.Date("2013-01-01"), ]
@@ -269,7 +267,7 @@ ggplot(recent, aes(date, unemploy)) + geom_line()
 
 ```
 
-**`geom_step`**
+#### `geom_step`
 
 ```{r}
 
@@ -277,7 +275,7 @@ ggplot(recent, aes(date, unemploy)) + geom_step()
 
 ```
 
-**`geom_path`**
+#### `geom_path`
 
 ```{r}
 m <- ggplot(economics, aes(unemploy/pop, psavert))
