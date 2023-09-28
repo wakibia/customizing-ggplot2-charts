@@ -1,0 +1,378 @@
+---
+author: Cyrus Wakibia
+title: Customizing Charts Using ggplot2 extensions
+date: '2023-09-24'
+output:
+  html_document:
+    code_folding: hide
+
+---
+
+
+*This document was last updated on `r format(Sys.Date(), "%Y-%m-%d")`.*
+
+
+```{r load packages, include=FALSE}
+library(tidyverse)
+library(ggtext)
+library(glue)
+library(ggforce)
+library(ggrepel)
+library(geomtextpath)
+
+knitr::opts_chunk$set(warning = FALSE, message = FALSE)
+```
+
+### Some important themes
+
+```         
+`theme_minimal()`
+`ggthemes`
+`bbplots`
+`ggthemr`
+`The Economist`
+```
+
+## ggthemes: Improve your themes with this
+
+# gghighlight: Highlight specific parts of the chart
+
+# ggtext
+
+Provides simple Markdown and HTML rendering for ggplot2
+
+#### [reference](https://github.com/wilkelab/ggtext/)
+
+### Key Functions
+
+```         
+- `element_markdown()`
+- `element_textbox()`
+```
+
+**`element_markdown()`**
+
+-   Both behave similarly to element_text() but render the provided text as markdown/html. `element_markdown()` is meant as a direct replacement for *`element_text()`*, and it renders text without word wrapping.
+-   To start a new line, use the **`<br>` tag or add two spaces** before the end of a line.
+
+**`element_textbox()`**
+
+-   `element_textbox()` offers support for rendering larger amounts of text that require word wrapping.
+-   Unlike `element_markdown()`, it cannot be used for axis tick labels, and it cannot draw text at arbitrary angles, only at fixed orientations corresponding to 0, 90, 180, and 270 degrees.
+-   In practice, you will usually want to use *`element_textbox_simple()`* instead of *`element_textbox()`*, as it sets useful defaults for many parameters not usually defined in ggplot2 themes.
+
+#### element_markdown()
+
+```{r}
+
+data("diamonds")
+color = c("#009E73", "#D55E00", "#0072B2", "#000000", "#F11F00")
+
+
+diamonds |> 
+  group_by(cut) |> 
+  summarise(average_price = mean(price)) |> 
+  mutate(
+         cut = glue("<b style='color:{color}'>{cut}</b>"),
+         cut = fct_reorder(cut, average_price)
+         ) |> 
+   ggplot(aes(average_price, cut, fill = color)) + 
+  geom_col(alpha = 0.5) + 
+  scale_fill_identity() +
+  
+  ## Add the markdown styling
+  labs(caption = "Data Source: **ggplot2**<br>",
+       title = "**Diamond's *Average Price* by *CUT* type**") +
+  theme(
+    axis.text.y = element_markdown(),
+    plot.caption = element_markdown(lineheight = 1.2),
+    plot.title = element_markdown()
+  )
+
+
+```
+
+#### element_markdown()
+
+```{r}
+ggplot(mtcars, aes(disp, mpg)) + 
+  geom_point() +
+  labs(
+    title = "<b>Fuel economy vs. engine displacement</b><br>
+    <span style = 'font-size:10pt'>There is a *negative*
+    linear **relationship** between <span style = 'color:red;'>mpg and discplacement</span>.</span>",
+    x = "displacement (in<sup>3</sup>)",
+    y = "Miles per gallon (mpg)<br><span style = 'font-size:8pt'>A measure of
+    the car's fuel efficiency.</span>"
+  ) +
+  theme(
+    plot.title.position = "plot",
+    plot.title = element_textbox_simple(
+      size = 13,
+      lineheight = 1,
+      padding = margin(5.5, 5.5, 5.5, 5.5),
+      margin = margin(0, 0, 5.5, 0),
+      fill = "cornsilk"
+    ),
+    axis.title.x = element_textbox_simple(
+      width = NULL,
+      padding = margin(4, 4, 4, 4),
+      margin = margin(4, 0, 0, 0),
+      linetype = 1,
+      r = grid::unit(8, "pt"),
+      fill = "azure1"
+    ),
+    axis.title.y = element_textbox_simple(
+      hjust = 0,
+      orientation = "left-rotated",
+      minwidth = unit(1, "in"),
+      maxwidth = unit(2, "in"),
+      padding = margin(4, 4, 2, 4),
+      margin = margin(0, 0, 2, 0),
+      fill = "lightsteelblue1"
+    )
+  )
+```
+
+# ggrepel
+
+Repel overlapping text labels away from each other.
+
+It provides the following geoms: - geom_text_repel(): adds text directly to the plot - geom_label_repel(): draws a rectangle underneath the text, making it easier to read
+
+```         
+**We can also disable clipping to allow the labels to go beyond the edges of the panel.**
+```
+
+**geom_text_repel**
+
+*Text labels repel away from each other, away from data points, and away from edges of the plotting area (panel).*
+
+```{r}
+ggplot(mtcars, aes(wt, mpg, label = rownames(mtcars))) +
+  geom_text_repel() +
+  geom_point(color = 'red') +
+  theme_classic(base_size = 16)
+```
+
+```{r}
+set.seed(42)
+
+p <- ggplot(mtcars, aes(y = wt, x = 1, label = rownames(mtcars))) +
+  geom_point(color = "red") +
+  ylim(1, 5.5) +
+  theme(
+    axis.line.x  = element_blank(),
+    axis.ticks.x = element_blank(),
+    axis.text.x  = element_blank(),
+    axis.title.x = element_blank()
+  )
+
+p1 <- p +
+  xlim(1, 1.375) +
+  geom_text_repel(
+    force        = 0.5,
+    nudge_x      = 0.15,
+    direction    = "y",
+    hjust        = 0,
+    segment.size = 0.2
+  ) +
+  ggtitle("hjust = 0")
+
+p2 <- p + 
+  xlim(1, 1.375) +
+  geom_text_repel(
+    force        = 0.5,
+    nudge_x      = 0.2,
+    direction    = "y",
+    hjust        = 0.5,
+    segment.size = 0.2
+  ) +
+  ggtitle("hjust = 0.5 (default)")
+
+p3 <- p +
+  xlim(0.25, 1) +
+  scale_y_continuous(position = "right") +
+  geom_text_repel(
+    force        = 0.5,
+    nudge_x      = -0.25,
+    direction    = "y",
+    hjust        = 1,
+    segment.size = 0.2
+  ) +
+  ggtitle("hjust = 1")
+
+gridExtra::grid.arrange(p1, p2, p3, ncol = 3)
+```
+
+**geom_label_repel**
+
+```{r}
+p <- ggplot(mtcars,
+  aes(wt, mpg, label = rownames(mtcars), colour = factor(cyl))) +
+  geom_point()
+# Labels with background
+p + geom_label_repel()
+```
+
+# ggforce
+
+-   The `ggforce` package is a ggplot2 extension that adds many exploratory data analysis features
+
+    hull plots for visualizing clusters or groups within our data
+
+-   The Hull Plot is a visualization that produces a shaded areas around clusters (groups) within our data. It gets the name because of the Convex Hull shape. It's a great way to show customer segments, group membership, and clusters on a Scatter Plot.
+
+```{r}
+library(tidyquant)
+
+mpg %>%
+  mutate(engine_size = str_c("Cylinder: ", cyl)) %>%
+  ggplot(aes(displ, hwy)) +
+  geom_mark_ellipse(
+        aes(fill = engine_size, label = engine_size),
+        label.buffer = unit(4, 'mm'),
+        label.fill = 'tomato',
+        show.legend = FALSE)+
+  geom_point()+
+  geom_smooth(se = FALSE, span = 1.0, method = 'loess') +
+  expand_limits(y = 50) +
+  theme_tq() +
+  scale_fill_tq() +
+  labs(
+      title = "Fuel Economy (MPG) Trends by Engine Size and Displacement",
+      subtitle = "Hull plot to indicate clusters / group assignment",
+      y = "Highway Fuel Economy (MPG)",
+      x = "Engine Displacement Volume (Liters)",
+      fill = "",
+      caption = "Engine size has a negative relationship to fuel economy."
+  )
+
+
+
+
+
+```
+
+
+### ggplot2 recap
+
+    `geom_path()` connects the observations in the order in which they appear in the data. 
+    `geom_line()` connects them in order of the variable on the x axis. 
+    `geom_step()` creates a stairstep plot, highlighting exactly when changes occur. The group aesthetic determines which cases are connected together.
+
+**`geom_line`**
+
+```{r}
+recent <- economics[economics$date > as.Date("2013-01-01"), ]
+ggplot(recent, aes(date, unemploy)) + geom_line()
+
+```
+
+**`geom_step`**
+
+```{r}
+
+ggplot(recent, aes(date, unemploy)) + geom_step()
+
+```
+
+**`geom_path`**
+
+```{r}
+m <- ggplot(economics, aes(unemploy/pop, psavert))
+m + geom_path()
+# m + geom_path(aes(colour = as.numeric(date)))
+
+```
+
+
+# geomtextpath
+
+[reference](https://allancameron.github.io/geomtextpath/)
+
+
+- The goal of the `geomtextpath` package is to directly label line-based plots with text that is able to follow a curved path
+-   Using `geomtextpath`, our text can follow any path, and will remain correctly spaced and angled, even if you change the size and aspect ratio of your plotting device.
+
+-   The core functions in this package(`geomtextpath`), `geom_textpath` and `geom_labelpath`, work like any other geom in ggplot2.
+
+-   They take their co-ordinates, their y co-ordinates and their text label from an aesthetic mapping.
+
+
+    - The geoms for path, segment, *line, curve, density*, smooth, contour, sf; have two corresponding alternatiaves. e.g., textline and labelline. This follows for each of them
+    
+
+```{r}
+# Set a consistent theme for the plots here
+theme_set(theme_minimal() + 
+          theme(axis.line = element_line(size = 0.25, colour = "gray75")))
+
+t <- seq(5, -1, length.out = 1000) * pi
+
+spiral <- data.frame(x    = sin(t) * 1:1000, 
+                     y    = cos(t) * 1:1000,
+                     text = paste("Like a circle in a spiral,",
+                                  "like a wheel within a wheel,",
+                                  "never ending or beginning,",
+                                  "on an ever spinning reel")
+                     )
+
+ggplot(spiral, aes(x, y, label = text)) +
+  geom_textpath(linewidth = 7, vjust = 2, text_only = TRUE) +
+  coord_equal(xlim = c(-1500, 1500), ylim = c(-1500, 1500))
+```
+
+Add text in a textbox
+
+```{r}
+
+set.seed(5)
+
+df <- data.frame(x = spline(1:5, runif(5), xout = seq(1, 5, 1/100))$y,
+                 y = spline(1:5, runif(5), xout = seq(1, 5, 1/100))$y,
+                 z = "A curved textbox on an arbitrary path")
+
+ggplot(df, aes(x, y, label = z)) + 
+  geom_labelpath(size = 5, fill = "#F6F6FF")
+```
+
+### **`geom_textline`** and **`geom_labelline`**
+
+
+- You can use `geom_textline` and `geom_labelline` as a drop in for geom_line if you want it directly labelled. - Just pass the label you want as an argument to `geom_textline` (or if you have grouped data you can pass the label as an aesthetic mapping).
+
+
+**Add text to the end of the line**
+
+```{r}
+ggplot(pressure, aes(temperature, pressure)) +
+  geom_textline(label = "Mercury vapor pressure", size = 6,
+                linewidth = 1, linecolor = "red4", linetype = 2, 
+                color = "deepskyblue4",
+                hjust = 1
+                )
+```
+
+
+### Reference lines
+
+
+- Often, a reference line added to a plot requires a text annotation. 
+- We can do this directly with `geom_textabline`, `geom_textvline` and `geom_texthline`, or their text-box equivalents `geom_labelabline`, `geom_labelvline` and `geom_labelhline.` 
+- Although such lines aren’t curved, there are some benefits to using the **`geomtextpath`** functions if a labelled reference line is required: only a single call is needed, co-ordinates are not required for the text label, the text can be put in-line with an appropriate break in the line automatically, and the label will orientate and curve appropriately in polar co-ordinates.
+
+
+```{r}
+ggplot(mtcars, aes(mpg, disp)) + 
+  geom_point() + 
+  geom_texthline(yintercept = 200, label = "displacement threshold", 
+                 hjust = 1, color = "red4") +
+  geom_textvline(xintercept = 20, label = "consumption threshold", hjust = 0.8,
+                 linetype = 2, vjust = 1.3, color = "blue4") +
+  geom_textabline(slope = 15, intercept = -100, label = "partition line", 
+                  color = "green4", hjust = 0.6, vjust=0.4)
+```
+
+
+
