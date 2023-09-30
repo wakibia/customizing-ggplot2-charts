@@ -1,0 +1,397 @@
+---
+author: Cyrus Wakibia
+title: Automate Exploratory Plots
+output:
+  html_document:
+    css: styles.css
+---
+
+
+Instead of copying and pasting the same code and adjusting the variables, iterate over a vector of groups (variables, categories, numeric ranges) to generate the same visual for different data sets by using a custom function.
+
+```         
+  In one way or another you might have been in a situation where yourself or other colleagues preferred using a GUI driven tool to generate charts or perform any process of data analysis To be honest that task is crazily daunting especially when its not a one-off task. It's even worse when you are working on a project and constantly receiving feedback that you need to work on. R is very handy in writing functions that can save you the task of redoing those repetitive tasks. You can make it robust enough, if the task you regularly do are the same, you can simplify them, by writing the necessary function. The catch is when you don't have the programming experience. Even some of the people who are new to programming will find them copying and pasting code section. The major problem with this is maintenance. You will have to go to every code section that depends on copying and pasting and make the same changes. If you forget in one of the segment you might find yourself spending much time trying to figure out what might have gone wrong and where
+  
+  I hope you will find this helpful, particularly when performing exploratory analysis
+```
+
+Most often we find ourselves using certain charts to explore data. These charts may have different variations depending on what you are exploring.
+
+You might want to explore:
+
+```         
+- For a continuous variables, you might explore their distributions using density plots, histogram etc.
+- For categorical variables, you might want to explore the distribution of the variable using bar charts
+```
+
+If you are involved in these tasks more regularly, you might find yourself, copying and pasting particular codes in different scripts by editing the variables. Instead of this you can consider writing a function
+
+I love this practice:
+
+```         
+If you find yourself repeating similar code multiple times, then it may be a good candidate for a function.
+```
+
+One of the things you need to understand is how to work environment and data variables. Please see the section on **Data masking and Injection** from this [article](https://dplyr.tidyverse.org/articles/programming.html) for more on this. *it's important to understand that on how variables are referenced*
+
+We will also use functional programming using `**{purrr}**`. Here is a quick guide on purrr by [Rebecca Barter](https://www.rebeccabarter.com/blog/2019-08-19_purrr)
+
+There are several use cases why you may want to use a functional programming approach to generate the same chart for different data subsets:
+
+-   Explore distributions or relationships of different variables
+-   Communicate results for different groups
+-   Generate charts for custom reports using various data (sub)sets
+
+The efficiency of using a software program you already know is quickly out-weighed by being unable to easily reproduce the plots when needed. I know I invariably have to re-make even exploratory plots, and it'd be a bummer if I had to remake them all manually rather than re-running some code.
+
+For this case we will use the **mpg** dataset which is loaded from `ggplot2`
+
+```{r setup, include=FALSE}
+library(ggplot2)   ## for plotting
+library(purrr)     ## for iterative tasks
+library(dplyr)     ## for data wrangling
+library(patchwork) ## for multi-panel plots
+library(showtext)
+library(here)
+
+library(extrafont)
+loadfonts()
+
+
+## customize plot style
+theme_set(theme_minimal(base_size = 15, base_family = "Roboto"))
+theme_update(
+  axis.title.x = element_text(margin = margin(12, 0, 0, 0), color = "grey30"),
+  axis.title.y = element_text(margin = margin(0, 12, 0, 0), color = "grey30"),
+  panel.grid.minor = element_blank(),
+  panel.border = element_rect(color = "grey45", fill = NA, linewidth = 1.5),
+  panel.spacing = unit(.9, "lines"),
+  strip.text = element_text(size = rel(1)),
+  plot.title = element_text(size = rel(1.4), face = "bold", hjust = .5),
+  plot.title.position = "plot"
+)
+
+## adjust data set
+mpg <-
+  ggplot2::mpg |> 
+  filter(year == 2008) |> 
+  mutate(manufacturer = stringr::str_to_title(manufacturer))
+```
+
+
+```{r}
+knitr::opts_chunk$set(
+  fig.dpi = 300, 
+  collapse = TRUE, 
+  out.width = "100%",
+  out.height = "100%",
+  warning = FALSE
+  )
+
+
+```
+
+
+The use case
+
+
+```{r}
+g <- 
+  ggplot(mpg, aes(x = hwy, y = displ)) +
+  scale_x_continuous(breaks = 2:8*5) +
+  labs(x = "Highway miles per gallon", y = "Displacement in litres", color = NULL)
+
+g + geom_point(aes(color = manufacturer), alpha = .5, size = 3)
+# ggsave("cluttered_chart.png", bg="white", units="in", width=9, height=6, path = here('image'))
+```
+
+Faceting
+
+```{r}
+ g + 
+  geom_point(alpha = .5, size = 2) +
+  facet_wrap(~ manufacturer, ncol = 3)
+```
+
+```{r}
+g +
+  ## filter for manufacturer of interest
+  geom_point(data = filter(mpg, manufacturer == "Audi"), 
+             color = "#007cb1", alpha = .5, size = 4) +
+  ## add shaded points for other data
+  geom_point(data = filter(mpg, manufacturer != "Audi"), 
+             shape = 1, color = "grey45", size = 2) +
+  ## add title manually
+  ggtitle("Audi")
+```
+
+The Function
+
+```{r}
+plot_manufacturer <- function(group) {
+  
+  ## check if input is valid
+  if (!group %in% mpg$manufacturer) stop("Manufacturer not listed in the data set.")
+  
+  ggplot(mapping = aes(x = hwy, y = displ)) +
+    ## filter for manufacturer of interest
+    geom_point(data = filter(mpg, manufacturer %in% group), 
+               color = "#007cb1", alpha = .5, size = 4) +
+    ## add shaded points for other data
+    geom_point(data = filter(mpg, !manufacturer %in% group), 
+               shape = 1, color = "grey45", size = 2) +
+    scale_x_continuous(breaks = 2:8*5) +
+    ## add title automatically based on subset choice
+    labs(x = "Highway gallons", y = "Displacement", 
+         title = group, color = NULL)
+}
+```
+
+`Function Use Case`
+
+```{r}
+## run function for specific subsets
+plot_manufacturer("Audi")
+plot_manufacturer("Chevrolet")
+```
+
+The Automation
+
+```{r}
+groups <- unique(mpg$manufacturer)
+map(groups, ~plot_manufacturer(group = .x))
+```
+
+Complex Example
+
+```{r}
+plot_manufacturer_marginal <- function(group, save = FALSE) {
+  
+  ## check if input is valid
+  if (!group %in% mpg$manufacturer) stop("Manufacturer not listed in the data set.")
+  if (!is.logical(save)) stop("save should be either TRUE or FALSE.")
+  
+  ## filter data
+  data <- filter(mpg, manufacturer %in% group)
+  
+  ## set limits
+  lims_x <- range(mpg$hwy) 
+  lims_y <- range(mpg$displ)
+  
+  ## define colors
+  pal <- RColorBrewer::brewer.pal(n = n_distinct(mpg$class), name = "Dark2")
+  names(pal) <- unique(mpg$class)
+  
+  ## scatter plot
+  main <- ggplot(data, aes(x = hwy, y = displ, color = class)) +
+    geom_point(size = 3, alpha = .5) +
+    scale_x_continuous(limits = lims_x, breaks = 2:8*5) +
+    scale_y_continuous(limits = lims_y) +
+    scale_color_manual(values = pal, name = NULL) +
+    labs(x = "Highway miles per gallon", y = "Displacement") +
+    theme(legend.position = "bottom")
+  
+  ## boxplots
+  right <- ggplot(data, aes(x = manufacturer, y = displ)) +
+    geom_boxplot(linewidth = .7, color = "grey45") +
+    scale_y_continuous(limits = lims_y, guide = "none", name = NULL) +
+    scale_x_discrete(guide = "none", name = NULL) +
+    theme_void()
+  
+  top <- ggplot(data, aes(x = hwy, y = manufacturer)) +
+    geom_boxplot(linewidth = .7, color = "grey45") +
+    scale_x_continuous(limits = lims_x, guide = "none", name = NULL) +
+    scale_y_discrete(guide = "none", name = NULL) +
+    theme_void()
+  
+  ## combine plots
+  p <- top + plot_spacer() + main + right + 
+    plot_annotation(title = group) + 
+    plot_layout(widths = c(1, .05), heights = c(.1, 1))
+  
+  ## save multi-panel plot
+  if (isTRUE(save)) {
+    ggsave(p, filename = paste0(group, ".pdf"), 
+           width = 6, height = 6, device = cairo_pdf)
+  }
+  
+  return(p)
+}
+```
+
+Case 1
+
+```{r}
+plot_manufacturer_marginal("Dodge")
+
+```
+
+## Case 2
+
+```{r}
+plot_manufacturer_marginal("Nissan") 
+
+```
+
+General Example - with map
+
+```{r}
+map(groups, ~plot_manufacturer_marginal(.x))
+
+```
+
+Save Plots
+
+```{r}
+walk(groups, ~plot_manufacturer_marginal(.x, save = TRUE))
+
+```
+
+Variables As Inputs
+
+```{r}
+plot_scatter_lm <- function(data, var1, var2, pointsize = 2, transparency = .5, color = "") {
+  
+  ## check if inputs are valid
+  if (!exists(substitute(data))) stop("data needs to be a data frame.")
+  if (!is.data.frame(data)) stop("data needs to be a data frame.")
+  if (!is.numeric(pull(data[var1]))) stop("Column var1 needs to be of type numeric, passed as string.")
+  if (!is.numeric(pull(data[var2]))) stop("Column var2 needs to be of type numeric, passed as string.")
+  if (!is.numeric(pointsize)) stop("pointsize needs to be of type numeric.")
+  if (!is.numeric(transparency)) stop("transparency needs to be of type numeric.")
+  if (color != "") { if (!color %in% names(data)) stop("Column color needs to be a column of data, passed as string.") }
+  
+  g <- 
+    ggplot(data, aes(x = !!sym(var1), y = !!sym(var2))) +
+    geom_point(aes(color = !!sym(color)), size = pointsize, alpha = transparency) +
+    geom_smooth(aes(color = !!sym(color), color = after_scale(prismatic::clr_darken(color, .3))), 
+                method = "lm", se = FALSE) +
+    theme_minimal(base_family = "Roboto Condensed", base_size = 15) +
+    theme(panel.grid.minor = element_blank(),
+          legend.position = "top")
+   
+  if (color != "") { 
+    if (is.numeric(pull(data[color]))) {
+      g <- g + scale_color_viridis_c(direction = -1, end = .85) +
+        guides(color = guide_colorbar(
+          barwidth = unit(12, "lines"), barheight = unit(.6, "lines"), title.position = "top"
+        ))
+    } else {
+      g <- g + scale_color_brewer(palette = "Set2")
+    }
+  }
+    
+  return(g)
+}
+```
+
+Use embrace ({{}}) instead of creating symbols
+
+```{r}
+plot_scatter_lm_embraced <- function(data, var1, var2, color = NULL) {
+  
+  v1 <- deparse(substitute(var1))
+  v2 <- deparse(substitute(var2))
+  v3 <- deparse(substitute(color))
+  
+  ## check if inputs are valid
+  if (!exists(substitute(data))) stop("data needs to be a data frame.")
+  if (!is.data.frame(data)) stop("data needs to be a data frame.")
+  if (!v1 %in% names(data)) stop("Column var1 needs to be a column of data.")
+  if (!v2 %in% names(data)) stop("Column var2 needs to be a column of data.")
+  if (!is.numeric(pull(data[v1]))) stop("Column var1 needs to be of type numeric.")
+  if (!is.numeric(pull(data[v2]))) stop("Column var2 needs to be of type numeric.")
+  if (!v3 %in% c(names(data), "NULL")) stop("Column color needs to be a column of data.")
+  
+  g <- 
+    ggplot(data, aes(x = {{ var1 }}, y = {{ var2 }})) +
+    geom_point(aes(color = {{ color }}), alpha = .5) +
+    geom_smooth(aes(color = {{ color }}), method = "lm", se = FALSE) +
+    theme_minimal(base_family = "Roboto Condensed", base_size = 15) +
+    theme(panel.grid.minor = element_blank(),
+          legend.position = "top")
+   
+  if (v3 != "NULL") {
+    if (is.numeric(pull(data[v3])))  {
+      g <- g + scale_color_viridis_c(direction = -1, end = .85) +
+        guides(color = guide_colorbar(
+          barwidth = unit(12, "lines"), barheight = unit(.6, "lines"), title.position = "top"
+        ))
+    } else {
+      g <- g + scale_color_brewer(palette = "Set2")
+    }
+  }
+  
+  return(g)
+}
+```
+
+Embrace Use Case 1
+
+```{r}
+plot_scatter_lm_embraced(data = mpg, var1 = displ, var2 = hwy)
+
+
+```
+
+Embrace Use Case 2
+
+```{r}
+plot_scatter_lm_embraced(data = mpg, var1 = displ, var2 = hwy, color = cyl)
+
+
+```
+
+Embrace Use Case 3
+
+```{r}
+plot_scatter_lm_embraced(data = mpg, var1 = displ, var2 = hwy, color = class)
+
+
+```
+
+Using Symbols
+
+map2
+
+```{r}
+map2(
+  c("displ", "displ", "hwy"), 
+  c("hwy", "cty", "cty"),
+  ~plot_scatter_lm(
+    data = mpg, var1 = .x, var2 = .y, 
+    color = "cyl", pointsize = 3.5
+  )
+)
+```
+
+pmap
+
+```{r}
+## set up variables of interest
+names <- c("bill_length_mm", "bill_depth_mm", "flipper_length_mm", "body_mass_g")
+## ... and create all possible combinations
+names_set <- tidyr::expand_grid(names, names)
+```
+
+```{r}
+library(palmerpenguins)
+
+pmap(
+  names_set, ~plot_scatter_lm(
+    data = penguins, 
+    var1 = .x, var2 = .y, color = "species"
+  )
+)
+```
+
+Using `facet_matrix`
+
+```{r}
+ggplot(penguins, aes(x = .panel_x, y = .panel_y)) +
+  geom_point(aes(color = species), alpha = .5) +
+  geom_smooth(aes(color = species), method = "lm") +
+  ggforce::geom_autodensity(aes(color = species, fill = after_scale(color)), alpha = .7) +
+  scale_color_brewer(palette = "Set2", name = NULL) +
+  ggforce::facet_matrix(vars(names), layer.lower = 2, layer.diag = 3)
+```

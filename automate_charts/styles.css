@@ -1,0 +1,67 @@
+.custom-figure {
+  max-width: 100%; /* Allow figures to scale down to fit the container */
+  height: auto;    /* Maintain the original aspect ratio */
+}
+
+
+  .content h3 {
+    margin-top: -30px !important;
+    font-family: 'Canicule Display','Georgia','Times New Roman','Times','Times-Roman',serif,-apple-system;
+    line-height: 1.2;
+
+  }
+  
+  details {
+    margin-bottom: 40px;
+  }
+  
+  h4{
+    font-family: 'Cabinet Grotesk','Arial Black','Arial','Helvetica',sans-serif,-apple-system;
+    line-height: 1.2;
+    letter-spacing: -.25px;
+}
+
+
+h5 {
+    font-family: 'Cabinet Grotesk','Arial Black','Arial','Helvetica',sans-serif,-apple-system;
+    line-height: 1.2;
+    letter-spacing: -.25px;
+    color: #777;
+}
+
+.post-container{
+    color: #777;
+}
+  
+  ul {
+    display: block;
+    list-style-type: disc;
+}
+
+.post-container a {
+    color: #28a87d;
+}
+
+
+h1, h6 {
+    font-family: 'Canicule Display','Georgia','Times New Roman','Times','Times-Roman',serif,-apple-system;
+    line-height: 1.2;
+}
+
+
+h2 {
+    font-size: 3.9rem;
+    font-family: 'Canicule Display','Georgia','Times New Roman','Times','Times-Roman',serif,-apple-system;
+    line-height: 1.2;
+}
+  
+  
+  code {
+    padding: 2px 4px;
+    font-size: 90%;
+    color: #B48200;
+    font-style: oblique;
+    background-color: #fbf9f4;
+    border-radius: 4px;
+}
+  
