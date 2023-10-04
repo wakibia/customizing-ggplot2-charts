@@ -47,6 +47,9 @@ For this case we will use the **mpg** dataset which is loaded from `ggplot2`
 
 # setup - Theme to use globally {How we want our charts to look like}
 
+<details>
+<summary>Unfold to see code</summary>
+
 ```{r setup, include=FALSE}
 library(ggplot2)   ## for plotting
 library(purrr)     ## for iterative tasks
@@ -79,6 +82,7 @@ mpg <-
   mutate(manufacturer = stringr::str_to_title(manufacturer))
 ```
 
+</details>
 
 Set chunk options
 
@@ -88,7 +92,8 @@ knitr::opts_chunk$set(
   collapse = TRUE, 
   out.width = "100%",
   out.height = "100%",
-  warning = FALSE
+  warning = FALSE,
+  echo = TRUE
   )
 
 
@@ -127,7 +132,10 @@ Using ggplot2, it is easy to facet chart, using the `ggplot2::facet_wrap()` func
   facet_wrap(~ manufacturer, ncol = 3)
 ```
 
+
 Using the chart we created in the introduction, we can choose to "brush" the areas we don't want, by filtering out the data b y our variable of interest
+
+
 
 ```{r}
 g +
@@ -151,6 +159,10 @@ We will check whether the value passed is passed part of the variable we are usi
 
 **The value is also passed as a string**
 
+<details>
+
+<summary>Unfold to see code</summary>
+
 ```{r}
 plot_manufacturer <- function(group) {
   
@@ -170,6 +182,8 @@ plot_manufacturer <- function(group) {
          title = group, color = NULL)
 }
 ```
+
+</details>
 
 ## Function Use Case
 
@@ -215,6 +229,8 @@ Like the previous function, our `groups` come from a predefined variable from th
 
 We will also use color palettes from `RColorBrewer`. For more on `RColorBrewer` please read [here](https://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3)
 
+<details>
+<summary>Unfold to see code</summary>
 
 ```{r}
 plot_manufacturer_marginal <- function(group, save = FALSE) {
@@ -271,6 +287,8 @@ plot_manufacturer_marginal <- function(group, save = FALSE) {
   return(p)
 }
 ```
+
+</details>
 
 ### Applying the Function
 
@@ -329,6 +347,9 @@ Here we will pass the name of the variables as strings
     pull(data[var1]) is equivalent to data$var1, The difference is here var1 is passed as a string `pull(data['var1'])`, but for `data$var1` var1 will be unquoted
     
 
+<details>    
+<summary>Unfold to see code</summary>
+
 ```{r}
 plot_scatter_lm <- function(data, var1, var2, pointsize = 2, transparency = .5, color = "") {
   
@@ -366,12 +387,15 @@ plot_scatter_lm <- function(data, var1, var2, pointsize = 2, transparency = .5, 
 }
 ```
 
+</details>
 
 ### Embracing the variable
 
 In the above case the variable are passed explicitly as strings. When embracing the variable `{{ var }}`, you pass the variable name **as-is**, you don't pass it as a string
 Use embrace ({{}}) instead of creating symbols
 
+<details>
+<summary>Unfold to see code</summary>
 
 ```{r}
 plot_scatter_lm_embraced <- function(data, var1, var2, color = NULL) {
@@ -414,6 +438,9 @@ plot_scatter_lm_embraced <- function(data, var1, var2, color = NULL) {
   return(g)
 }
 ```
+
+
+</details>
 
 ## Embrace Use Case 1
 
@@ -476,7 +503,7 @@ pmap(
 
 ## Using `facet_matrix` - Creates a Scatterplot Matrix
 
-```{r}
+```{r, warning=FALSE}
 ggplot(penguins, aes(x = .panel_x, y = .panel_y)) +
   geom_point(aes(color = species), alpha = .5) +
   geom_smooth(aes(color = species), method = "lm") +
@@ -484,3 +511,9 @@ ggplot(penguins, aes(x = .panel_x, y = .panel_y)) +
   scale_color_brewer(palette = "Set2", name = NULL) +
   ggforce::facet_matrix(vars(names), layer.lower = 2, layer.diag = 3)
 ```
+
+
+```{r session-info}
+sessionInfo()
+```
+
