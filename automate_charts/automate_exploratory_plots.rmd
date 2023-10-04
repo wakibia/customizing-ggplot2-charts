@@ -9,13 +9,12 @@ output:
 
 Instead of copying and pasting the same code and adjusting the variables, iterate over a vector of groups (variables, categories, numeric ranges) to generate the same visual for different data sets by using a custom function.
 
-```         
-  In one way or another you might have been in a situation where yourself or other colleagues preferred using a GUI driven tool to generate charts or perform any process of data analysis To be honest that task is crazily daunting especially when its not a one-off task. It's even worse when you are working on a project and constantly receiving feedback that you need to work on. R is very handy in writing functions that can save you the task of redoing those repetitive tasks. You can make it robust enough, if the task you regularly do are the same, you can simplify them, by writing the necessary function. The catch is when you don't have the programming experience. Even some of the people who are new to programming will find them copying and pasting code section. The major problem with this is maintenance. You will have to go to every code section that depends on copying and pasting and make the same changes. If you forget in one of the segment you might find yourself spending much time trying to figure out what might have gone wrong and where
-  
-  I hope you will find this helpful, particularly when performing exploratory analysis
-```
 
-Most often we find ourselves using certain charts to explore data. These charts may have different variations depending on what you are exploring.
+    In one way or another you might have been in a situation where yourself or other colleagues preferred using a GUI driven tool to generate charts or perform any process of data analysis To be honest that task is crazily daunting especially when its not a one-off task. It's even worse when you are working on a project and constantly receiving feedback that you need to work on. R is very handy in writing functions that can save you the task of redoing those repetitive tasks. You can make it robust enough, if the task you regularly do are the same, you can simplify them, by writing the necessary function. The catch is when you don't have the programming experience. Even some of the people who are new to programming will find them copying and pasting code section. The major problem with this is maintenance. You will have to go to every code section that depends on copying and pasting and make the same changes. If you forget in one of the segment you might find yourself spending much time trying to figure out what might have gone wrong and where
+  
+  *I hope you will find this helpful, particularly when performing exploratory analysis*
+
+Most often we find ourselves using certain charts to explore data - in the data exploratory phase. These charts may have different variations depending on what you are exploring.
 
 You might want to explore:
 
@@ -28,11 +27,11 @@ If you are involved in these tasks more regularly, you might find yourself, copy
 
 I love this practice:
 
-```         
+``` 
 If you find yourself repeating similar code multiple times, then it may be a good candidate for a function.
 ```
 
-One of the things you need to understand is how to work environment and data variables. Please see the section on **Data masking and Injection** from this [article](https://dplyr.tidyverse.org/articles/programming.html) for more on this. *it's important to understand that on how variables are referenced*
+One of the things you need to understand is how to work environment and data variables. Please see the section on **Data masking and Injection** from this [article](https://dplyr.tidyverse.org/articles/programming.html) for more on this. **it's important to understand that on how variables are referenced**
 
 We will also use functional programming using `**{purrr}**`. Here is a quick guide on purrr by [Rebecca Barter](https://www.rebeccabarter.com/blog/2019-08-19_purrr)
 
@@ -45,6 +44,8 @@ There are several use cases why you may want to use a functional programming app
 The efficiency of using a software program you already know is quickly out-weighed by being unable to easily reproduce the plots when needed. I know I invariably have to re-make even exploratory plots, and it'd be a bummer if I had to remake them all manually rather than re-running some code.
 
 For this case we will use the **mpg** dataset which is loaded from `ggplot2`
+
+# setup - Theme to use globally {How we want our charts to look like}
 
 ```{r setup, include=FALSE}
 library(ggplot2)   ## for plotting
@@ -79,6 +80,8 @@ mpg <-
 ```
 
 
+Set chunk options
+
 ```{r}
 knitr::opts_chunk$set(
   fig.dpi = 300, 
@@ -92,7 +95,10 @@ knitr::opts_chunk$set(
 ```
 
 
-The use case
+# Use Case
+
+Here we are going to create a chart that we use to build our case on why using functional programing is essential
+We use the manufacturer to color our chart scatterplot{}
 
 
 ```{r}
@@ -102,16 +108,26 @@ g <-
   labs(x = "Highway miles per gallon", y = "Displacement in litres", color = NULL)
 
 g + geom_point(aes(color = manufacturer), alpha = .5, size = 3)
-# ggsave("cluttered_chart.png", bg="white", units="in", width=9, height=6, path = here('image'))
+ggsave("cluttered_chart.png", bg="white", units="in", width=9, height=6,
+       path = here('image'))
 ```
 
-Faceting
+For the above chart we see that there are so many manufacturers (the color variable), this makes it's hard to interpret and do comparisons for the different categories
+
+One way we can enhance comparison of the different categories is through faceting - We create separate charts for each of the manufacture. The number of charts to be generated will be dependent on the number of unique categories of the faceting variable
+
+Using ggplot2, it is easy to facet chart, using the `ggplot2::facet_wrap()` function
+
+
+### Faceting
 
 ```{r}
  g + 
   geom_point(alpha = .5, size = 2) +
   facet_wrap(~ manufacturer, ncol = 3)
 ```
+
+Using the chart we created in the introduction, we can choose to "brush" the areas we don't want, by filtering out the data b y our variable of interest
 
 ```{r}
 g +
@@ -125,7 +141,15 @@ g +
   ggtitle("Audi")
 ```
 
-The Function
+# Introducing Function
+
+Instead of passing the group - the variable to add color or facet the chart manually, we are going to create a function
+
+In the function we are going to pass the values of the variable we will be adding aesthetics with like color, shape, and so forth
+
+We will check whether the value passed is passed part of the variable we are using for aesthetics - if it's not we will stop and prompt the user that the value passed is not in the variable
+
+**The value is also passed as a string**
 
 ```{r}
 plot_manufacturer <- function(group) {
@@ -147,7 +171,11 @@ plot_manufacturer <- function(group) {
 }
 ```
 
-`Function Use Case`
+## Function Use Case
+
+Recall, that the variable we are using for adding aesthetics is known in advance. In this case, the aesthetics variable is manufacturer. We are still building on our first chart. You can see all the values of the manufacturer by running r`unique(mpg$manufacturer)`
+
+We will pass `Audi` and `Chevrolet` to our function as our two test cases. See below
 
 ```{r}
 ## run function for specific subsets
@@ -155,14 +183,38 @@ plot_manufacturer("Audi")
 plot_manufacturer("Chevrolet")
 ```
 
-The Automation
+## The Automation
+
+Now it can also be tedious, to pass every value to the function at a time. 
+
+We will automate this to produce the charts by passing all the groups to our functions. All the possible charts will be generated at one go
+
+As mentioned in the introduction, we will be using `purrr` for functional programming. We are going to use most of the functions
+
+
+The `map()` returns a list. This means that results returned will be a list. You can store them in a list and select them by their index position because our list is not named yet. Storing them within the list you can also use the `walk` function to save them all iteratively
 
 ```{r}
 groups <- unique(mpg$manufacturer)
 map(groups, ~plot_manufacturer(group = .x))
+
+## store the charts in a lis
+# plots <- map(groups, ~plot_manufacturer(group = .x))
+
+## select the charts by their position
+# plots[[1]] ## selects the first one\
 ```
 
-Complex Example
+## A More Complex Example
+
+In the previous example, I pointed out that you can save the charts at one go by storing them in a list. 
+
+Here we are going to pass the `save` argument to our function which is a logical. If **`TRUE`**, the charts will be saved otherwise they will not. The value of the variable we pass is going to filter the data and create a new dataset based on the filter values
+
+Like the previous function, our `groups` come from a predefined variable from the dataset
+
+We will also use color palettes from `RColorBrewer`. For more on `RColorBrewer` please read [here](https://colorbrewer2.org/#type=sequential&scheme=BuGn&n=3)
+
 
 ```{r}
 plot_manufacturer_marginal <- function(group, save = FALSE) {
@@ -178,7 +230,7 @@ plot_manufacturer_marginal <- function(group, save = FALSE) {
   lims_x <- range(mpg$hwy) 
   lims_y <- range(mpg$displ)
   
-  ## define colors
+  ## define colors by the color variable (class in this case)
   pal <- RColorBrewer::brewer.pal(n = n_distinct(mpg$class), name = "Dark2")
   names(pal) <- unique(mpg$class)
   
@@ -191,7 +243,7 @@ plot_manufacturer_marginal <- function(group, save = FALSE) {
     labs(x = "Highway miles per gallon", y = "Displacement") +
     theme(legend.position = "bottom")
   
-  ## boxplots
+  ## boxplots - each for x and y variables, appended on the top and right of the chart
   right <- ggplot(data, aes(x = manufacturer, y = displ)) +
     geom_boxplot(linewidth = .7, color = "grey45") +
     scale_y_continuous(limits = lims_y, guide = "none", name = NULL) +
@@ -212,42 +264,70 @@ plot_manufacturer_marginal <- function(group, save = FALSE) {
   ## save multi-panel plot
   if (isTRUE(save)) {
     ggsave(p, filename = paste0(group, ".pdf"), 
-           width = 6, height = 6, device = cairo_pdf)
+           width = 6, height = 6, device = cairo_pdf,
+           path = here('image'))
   }
   
   return(p)
 }
 ```
 
-Case 1
+### Applying the Function
+
+`map` helps us apply the same function to different items. However, we can always run the a case to see whether our function is working as expected
+
+### Test case 1
+
 
 ```{r}
 plot_manufacturer_marginal("Dodge")
 
 ```
 
-## Case 2
+### Test case 2
 
 ```{r}
-plot_manufacturer_marginal("Nissan") 
+# plot_manufacturer_marginal("Nissan") 
+
+### save the chart
+plot_manufacturer_marginal("Nissan", save = TRUE) 
 
 ```
 
-General Example - with map
+### General Case - Using `map`
 
 ```{r}
 map(groups, ~plot_manufacturer_marginal(.x))
 
 ```
 
-Save Plots
+## Save Plots
+
+Earlier we stated that we can save the plots using the `walk()` function. The function is used for its effect but does not return anything
+
 
 ```{r}
 walk(groups, ~plot_manufacturer_marginal(.x, save = TRUE))
 
 ```
 
-Variables As Inputs
+
+# General Case - Variables As Inputs
+
+To get along with this refer to data-masking referred in the introduction. The article explains in details how to make use data and environment variables within the tidy selection context and ggpplot2
+
+The main difference is how the variables are passed in the functions
+
+Here we will demonstrate the two vases but only shallowy
+
+### Name Injection
+
+Here we will pass the name of the variables as strings
+
+    Using !!sym() create a symbol from the character name of the variable passed in the function and unquotes it
+    
+    pull(data[var1]) is equivalent to data$var1, The difference is here var1 is passed as a string `pull(data['var1'])`, but for `data$var1` var1 will be unquoted
+    
 
 ```{r}
 plot_scatter_lm <- function(data, var1, var2, pointsize = 2, transparency = .5, color = "") {
@@ -270,6 +350,7 @@ plot_scatter_lm <- function(data, var1, var2, pointsize = 2, transparency = .5, 
     theme(panel.grid.minor = element_blank(),
           legend.position = "top")
    
+  ## control for continuous and categorical variable
   if (color != "") { 
     if (is.numeric(pull(data[color]))) {
       g <- g + scale_color_viridis_c(direction = -1, end = .85) +
@@ -285,10 +366,18 @@ plot_scatter_lm <- function(data, var1, var2, pointsize = 2, transparency = .5, 
 }
 ```
 
+
+### Embracing the variable
+
+In the above case the variable are passed explicitly as strings. When embracing the variable `{{ var }}`, you pass the variable name **as-is**, you don't pass it as a string
 Use embrace ({{}}) instead of creating symbols
+
 
 ```{r}
 plot_scatter_lm_embraced <- function(data, var1, var2, color = NULL) {
+  
+  ## here are converting the variable to a string so that we can use in subsequent operations, but we will pass what was 
+  #| was supplied in the function with the {{ }}
   
   v1 <- deparse(substitute(var1))
   v2 <- deparse(substitute(var2))
@@ -326,7 +415,7 @@ plot_scatter_lm_embraced <- function(data, var1, var2, color = NULL) {
 }
 ```
 
-Embrace Use Case 1
+## Embrace Use Case 1
 
 ```{r}
 plot_scatter_lm_embraced(data = mpg, var1 = displ, var2 = hwy)
@@ -334,7 +423,7 @@ plot_scatter_lm_embraced(data = mpg, var1 = displ, var2 = hwy)
 
 ```
 
-Embrace Use Case 2
+## Embrace Use Case 2
 
 ```{r}
 plot_scatter_lm_embraced(data = mpg, var1 = displ, var2 = hwy, color = cyl)
@@ -342,7 +431,7 @@ plot_scatter_lm_embraced(data = mpg, var1 = displ, var2 = hwy, color = cyl)
 
 ```
 
-Embrace Use Case 3
+## Embrace Use Case 3
 
 ```{r}
 plot_scatter_lm_embraced(data = mpg, var1 = displ, var2 = hwy, color = class)
@@ -350,7 +439,7 @@ plot_scatter_lm_embraced(data = mpg, var1 = displ, var2 = hwy, color = class)
 
 ```
 
-Using Symbols
+## Using Symbols
 
 map2
 
@@ -365,7 +454,7 @@ map2(
 )
 ```
 
-pmap
+## pmap- Pass n-arguments to the function
 
 ```{r}
 ## set up variables of interest
@@ -385,7 +474,7 @@ pmap(
 )
 ```
 
-Using `facet_matrix`
+## Using `facet_matrix` - Creates a Scatterplot Matrix
 
 ```{r}
 ggplot(penguins, aes(x = .panel_x, y = .panel_y)) +
