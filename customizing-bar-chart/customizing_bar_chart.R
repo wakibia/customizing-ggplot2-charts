@@ -66,3 +66,5 @@ ggplot(mpg_sum, aes(n, manufacturer, fill = color)) +
         )
 
 ## export the chart
+ggsave("bar-chart.png", bg="white", units="in", 
+       width=6, height=3, path = here::here("./customizing-bar-chart/bar_chart"))
