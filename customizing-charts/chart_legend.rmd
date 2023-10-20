@@ -1,0 +1,306 @@
+---
+title: Customizing Chart Legends
+date: 10-20-2023
+---
+
+
+```{r setup, include=FALSE}
+library(tidyverse)
+library(systemfonts)
+theme_set(theme_bw())
+```
+
+
+```{r data, message=FALSE}
+chic <- readr::read_csv("./Data/chicago-nmmaps-custom.csv")
+chic
+```
+
+
+
+# Turn Off the Legend
+
+### Option 1
+
+```{r}
+ggplot(chic,
+       aes(x = date, y = temp, color = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)") +
+  theme(legend.position = "none")
+```
+
+### Option 2
+
+```{r}
+ggplot(chic,
+       aes(x = date, y = temp,
+           color = season, shape = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)") +
+  guides(color = "none")
+```
+
+You can also use `scale_color_discrete(guide = "none")`
+
+
+Notice that: The change of the theme element removes all legends at once, you can remove particular legends with the latter options while keeping some others
+
+
+# Remove Legend Titles
+
+
+You can use the following methods
+
+- `element_blank()` at the theme level
+- `scale_color_discrete(name = NULL)`
+- `labs(color = NULL)`
+
+
+Notice that we are pass the color, because it is the one mapping to the legend. Otherwise, it could have been shape, fill or any other variable/element mapping to the legend
+
+
+```{r}
+ggplot(chic, aes(x = date, y = temp, color = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)") +
+  theme(legend.title = element_blank())
+```
+
+
+# Change Legend Position
+
+Default position is right, at the end of the panel
+
+```{r}
+ggplot(chic, aes(x = date, y = temp, color = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)") +
+  theme(legend.position = "top")
+```
+
+Possible positions are *top, right* which is the default, *bottom, left*
+
+
+
+    You can also place the legend inside the panel by specifying a vector with     relative x and y coordinates ranging from 0 (left or bottom) to 1 (right or top):
+
+
+```{r}
+ggplot(chic, aes(x = date, y = temp, color = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)",
+       color = NULL) +
+  theme(legend.position = c(.15, .15),
+        legend.background = element_rect(fill = "transparent"))
+```
+
+
+
+Overwrite the default white legend background with a transparent fill to make sure the legend does not hide any data points.
+
+
+
+# Change Legend Direction
+
+- The legend direction is by default vertical but horizontal when you choose either the “top” or “bottom” position.
+- You can also switch the direction as you like
+
+
+```{r}
+ggplot(chic, aes(x = date, y = temp, color = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)") +
+  theme(legend.position = c(.5, .97),
+        legend.background = element_rect(fill = "transparent")) +
+  guides(color = guide_legend(direction = "horizontal"))
+```
+
+
+# Change Style of the Legend Title
+You can change the appearance of the legend title by adjusting the theme element legend.title:
+
+
+```{r}
+ggplot(chic, aes(x = date, y = temp, color = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)") +
+  theme(legend.title = element_text(family = "Playfair",
+                                    color = "chocolate",
+                                    size = 14, face = "bold"))
+```
+
+
+# Change Legend Title
+
+The eaiest way to change the title of the legend is the labs() layer:
+
+
+
+```{r}
+ggplot(chic, aes(x = date, y = temp, color = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)",
+       color = "Seasons\nindicated\nby colors:") +
+  theme(legend.title = element_text(family = "Playfair",
+                                    color = "chocolate",
+                                    size = 14, face = "bold"))
+```
+
+
+
+    The legend details can be changed via scale_color_discrete(name = "title") or guides(color = guide_legend("title")):
+
+
+
+```{r}
+ggplot(chic, aes(x = date, y = temp, color = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)") +
+  theme(legend.title = element_text(family = "Playfair",
+                                    color = "chocolate",
+                                    size = 14, face = "bold")) +
+  scale_color_discrete(name = "Seasons\nindicated\nby colors:")
+```
+
+
+# Change Legend Labels
+
+
+
+```{r}
+ggplot(chic, aes(x = date, y = temp, color = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)") +
+  scale_color_discrete(
+    name = "Seasons:",
+    labels = c("Mar—May", "Jun—Aug", "Sep—Nov", "Dec—Feb")
+  ) +
+  theme(legend.title = element_text(
+    family = "Playfair", color = "chocolate", size = 14, face = 2
+  ))
+```
+
+# Change Background Boxes in the Legend
+
+
+```{r}
+ggplot(chic, aes(x = date, y = temp, color = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)") +
+  theme(legend.key = element_rect(fill = "darkgoldenrod1"),
+        legend.title = element_text(family = "Playfair",
+                                    color = "chocolate",
+                                    size = 14, face = 2)) +
+  scale_color_discrete("Seasons:")
+```
+
+
+# Change Size of Legend Symbols
+
+Points in the legend can get a little lost with the default size, especially without the boxes. To override the default one uses again the guides layer like this:
+
+```{r}
+ggplot(chic, aes(x = date, y = temp, color = season)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)") +
+  theme(legend.key = element_rect(fill = NA),
+        # remove the legend box
+        legend.title = element_text(color = "chocolate",
+                                    size = 14, face = 2)) +
+  scale_color_discrete("Seasons:") +
+  # override the size
+  guides(color = guide_legend(override.aes = list(size = 6)))
+
+## the size argument changes the size of color {season}
+```
+
+
+
+
+# Manually Adding Legend Items
+
+```{r}
+ggplot(chic, aes(x = date, y = o3)) +
+  geom_line(aes(color = "line")) +
+  geom_point(aes(color = "points")) +
+  labs(x = "Year", y = "Ozone") +
+  scale_color_manual(name = NULL,
+                     guide = "legend",
+                     values = c("points" = "darkorange2",
+                                "line" = "gray")) +
+  guides(color = guide_legend(override.aes = list(linetype = c(1, 0),
+                                                  shape = c(NA, 16))))
+```
+
+### Explanation for `guides(...)` on overriding the defaults:
+
+- linetype = c(1, 0) is specifying the linetype (line style) of the legend items. Here, it's a vector of two values. The first value 1 sets the linetype of the first legend item, and the second value 0 sets the linetype of the second legend item. In ggplot2, linetype 1 typically represents solid lines, while 0 represents no line (invisible).
+
+- shape = c(NA, 16) is specifying the shape of the legend items. Again, it's a vector of two values. The first value, NA, essentially means that there's no shape (it's invisible) for the first legend item. The second value, 16, is a code that represents a specific shape in ggplot2 (in this case, it represents a filled circle).
+
+    The purpose of using a vector in this context is to set different linetypes and shapes for different legend items. The first element of the vector corresponds to the first legend item, and the second element corresponds to the second legend item, and so on if there are more legend items to be customized. This approach allows you to have fine-grained control over the appearance of legend items, giving you the flexibility to define different linetypes and shapes for each item if needed.
+
+
+
+# Use Other Legend Styles
+
+The default legend for categorical variables such as season is a `guide_legend()`
+If you map a continuous variable to an aesthetic, `{ggplot2}` will by default not use guide_legend() but guide_colorbar():
+
+
+#### default legend behavior
+
+
+```{r}
+ggplot(chic,
+       aes(x = date, y = temp, color = temp)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)", color = "Temperature (°F)")
+```
+
+
+
+#### Using guide_legend when the legend mapping variable is categorical
+
+
+However, by using guide_legend() you can force the legend to show discrete colors for a given number of breaks as in case of a categorical variable:
+
+
+```{r}
+ggplot(chic,
+       aes(x = date, y = temp, color = temp)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)", color = "Temperature (°F)") +
+  guides(color = guide_legend())
+```
+
+
+
+#### use binned scales
+
+
+```{r}
+ggplot(chic,
+       aes(x = date, y = temp, color = temp)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)", color = "Temperature (°F)") +
+  guides(color = guide_bins())
+
+
+```
+
+
+#### Binned scales as discrete colorbars
+
+
+```{r}
+ggplot(chic,
+       aes(x = date, y = temp, color = temp)) +
+  geom_point() +
+  labs(x = "Year", y = "Temperature (°F)", color = "Temperature (°F)") +
+  guides(color = guide_colorsteps())
+```
+
+
+
